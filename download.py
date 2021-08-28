@@ -2,7 +2,6 @@
 import qbittorrentapi
 import time
 import sys
-import json
 import os
 import feedparser
 import time
