@@ -10,13 +10,15 @@ from pymongo import MongoClient
 
 sys.getdefaultencoding()
 
-##MongoDB Connect
-#client = MongoClient(host=['localhost'],username='rss',password='rssrss',authMechanism='SCRAM-SHA-1',authSource='admin')
+#MongoDB Connect
 client = MongoClient(host=['localhost'],username='rss',password='rssrss',authMechanism='SCRAM-SHA-1',authSource='mydb')
 db = client['mydb']
 
 ##qBittorrent Connect
 qbt_client = qbittorrentapi.Client(host='192.168.50.64', port=8080, username='admin', password='adminadmin')
+
+#Get Master data
+masterdata = db.data.find().next()
 
 def downloadRssFeed(url,category2,tags):
     try:
