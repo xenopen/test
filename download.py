@@ -15,7 +15,7 @@ client = MongoClient(host=['localhost'],username='rss',password='rssrss',authMec
 db = client['mydb']
 
 ##qBittorrent Connect
-qbt_client = qbittorrentapi.Client(host='192.168.50.64', port=8080, username='admin', password='adminadmin')
+qbt_client = qbittorrentapi.Client(host='localhost', port=8080, username='admin', password='adminadmin')
 
 #Get Master data
 masterdata = db.data.find().next()
@@ -65,6 +65,7 @@ def downloadAVRssFeed(url,category2,tags):
 ##Download New Rss To qBittorrent
 def downloadRss():
     try:
+        print('신규등록')
         count=0
         for item in db.torrents.find(projection = {'nyaa_infohash':1,'link':2,'category2':3,'tags':4,'download_status':5},filter={"download_status" : { "$exists" : False } }):
             count += 1
@@ -86,6 +87,7 @@ def downloadRss():
 #Check Rss Feed add to Qbit
 def checkDownloadAdded():
     try:
+        print('신규등록 확인')
         count = 0
         regCount = 0
         for item in db.torrents.find(projection = {'nyaa_infohash':1,'link':2,'category2':3,'tags':4,'download_status':5},filter={"download_status" : { "$exists" : False } }):
@@ -120,19 +122,20 @@ def checkDownloadAdded():
 #move download file to Nas
 def moveToNas():
     try:
+        print('저장장소 이동')
         torrents = qbt_client.torrents.info(status_filter='completed',sort='completion_on',reverse=True)
         count = 0
         for torrent in torrents:
-            if torrent.save_path.find('/Users/xenopen/Downloads/') != -1 or torrent.save_path.find('/Volumes/Downloads/') != -1:
+            if torrent.save_path.find('/Users/xenopen/Downloads/') != -1 or torrent.save_path.find('/Volumes/Downloads/') != -1  or torrent.save_path.find('/Volumes/public/') != -1:
                 from datetime import datetime
                 count += 1
                 print(str(datetime.fromtimestamp(torrent.completion_on)) +':'+ torrent.category+':'+torrent.tags+':'+torrent.save_path)
                 try:
                     time.sleep(1)
                     if torrent.category == torrent.tags:
-                        qbt_client.torrents.set_location(location='/Volumes/'+torrent.category+'/', torrent_hashes=torrent.hash)
+                        qbt_client.torrents.set_location(location='/Volumes/public/'+torrent.category+'/', torrent_hashes=torrent.hash)
                     else:            
-                        qbt_client.torrents.set_location(location='/Volumes/'+torrent.category+'/'+torrent.tags+'/', torrent_hashes=torrent.hash)
+                        qbt_client.torrents.set_location(location='/Volumes/public/'+torrent.category+'/'+torrent.tags+'/', torrent_hashes=torrent.hash)
                 except qbittorrentapi.exceptions.Conflict409Error as e:
                     print(e)
                     
@@ -143,6 +146,7 @@ def moveToNas():
 #Check Completed and Moved
 def checkCompleted():
     try:
+        print('완료된 확인')
         count = 0
         regCount = 0
 
@@ -213,6 +217,7 @@ def checkCompleted():
 
 def removeCompleted():
     try:
+        print('완료된 토렌트 삭제')
         count = 0
         regCount = 0
         torrents = qbt_client.torrents.info(status_filter='completed')
@@ -220,13 +225,14 @@ def removeCompleted():
             count += 1
             print(torrent.save_path)
             
-            if 'Volumes' in torrent.save_path:
+            if '/Volumes/public/' != torrent.save_path:
                 time.sleep(1)
+                regCount += 1
                 qbt_client.torrents.delete(delete_files=False, torrent_hashes=torrent.hash)
                 db.torrentsav.update_one({"nyaa_infohash": torrent.hash},{"$set":{"download_status":'moved'}})
             
 
-        print(str(count)+'건 중' +str(regCount) + '건 신규등록 확인')
+        print('완료 토렌트 '+str(count)+'건 중' +str(regCount) + '건 이동완료₩->확인후 삭제')
 
     except qbittorrentapi.LoginFailed as e:
         print(e)
@@ -234,15 +240,16 @@ def removeCompleted():
 
 def removeOld():
     try:
+        print('오래된 토렌트 삭제')
         count = 0
         regCount = 0
         torrents = qbt_client.torrents.info(sort='added_on')
         for torrent in torrents:
             count += 1
-            print(round(time.time()))
-            print(torrent.added_on)
-            print(round(time.time())-torrent.added_on)
-            print(torrent.added_on+(60) < round(time.time()))
+            #print(round(time.time()))
+            #print(torrent.added_on)
+            #print(round(time.time())-torrent.added_on)
+            #print(torrent.added_on+(60) < round(time.time()))
             if torrent.added_on+(60*60*24*5) < round(time.time()):
                 print(torrent.name)
                 time.sleep(1)
@@ -250,7 +257,7 @@ def removeOld():
                 db.torrentsav.update_one({"nyaa_infohash": torrent.hash},{"$set":{"download_status":'deleted'}})
             
 
-        print(str(count)+'건 중' +str(regCount) + '건 신규등록 확인')
+        print(str(count)+'건 중' +str(regCount) + '건 삭제')
 
     except qbittorrentapi.LoginFailed as e:
         print(e)

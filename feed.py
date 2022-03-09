@@ -20,10 +20,7 @@ masterdata = db.data.find().next()
 #download RssFeed
 def downloadRssFeed(url,category2,tags):
     try:
-        print("PARSE START")
-        print("CATE:"+category2)
-        print("TAGS:"+tags)
-        print(url)
+        print("CATE:"+category2 + " TAGS:"+tags +" URL:"+url)
         d = feedparser.parse(url)
         for item in d.entries:
             #item
@@ -49,8 +46,6 @@ def downloadRssFeed(url,category2,tags):
                 )
             else:
                 db.data.update_one({"_id": masterdata["_id"]},{"$set":{"CHECKDATE":datetime.now()}})
-        print("PARSE END")
-        print("")
     except qbittorrentapi.LoginFailed as e:
         print(e)
     except urllib.error.URLError as e2:
@@ -58,10 +53,7 @@ def downloadRssFeed(url,category2,tags):
 
 def downloadAVRssFeed(url,category2,tags):
     try:
-        print("PARSE START")
-        print("CATE:"+category2)
-        print("TAGS:"+tags)
-        print(url)
+        print("CATE:"+category2 + " TAGS:"+tags +" URL:"+url)
         d = feedparser.parse(url)
         for item in d.entries:
             db = client['mydb']
@@ -88,13 +80,17 @@ def downloadAVRssFeed(url,category2,tags):
                 )
             else:
                 db.data.update_one({"_id": masterdata["_id"]},{"$set":{"CHECKDATE":datetime.now()}})
-        print("PARSE END")
-        print("")
     except qbittorrentapi.LoginFailed as e:
         print(e)
     except urllib.error.URLError as e2:
         print(e2)
 
+
+print("start")
+from datetime import datetime
+now = datetime.now()
+current_time = now.strftime("%Y/%m/%d %H:%M:%S")
+print(current_time)
 #HANIME
 downloadRssFeed('https://sukebei.nyaa.si/?page=rss&c=1_1&f=0&u=hikiko123','HANIME','HANIME')
 
